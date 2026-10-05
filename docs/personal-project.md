@@ -1,6 +1,6 @@
 # FinSight — personal project
 
-## Résumé entry
+## Resume entry
 
 **FinSight — Portfolio Intelligence Platform**
 Personal project | Next.js, TypeScript, Python, FastAPI, SQLAlchemy, PostgreSQL, NumPy, Pandas, Docker, GitHub Actions
