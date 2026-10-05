@@ -1,5 +1,7 @@
 # FinSight
 
+[![FinSight checks](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml/badge.svg)](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml)
+
 **Portfolio intelligence with calculations you can inspect.**
 
 Personal project built with AI-assisted development. See the [résumé entry and project notes](docs/personal-project.md) for a factual description of the work and its tested scope.

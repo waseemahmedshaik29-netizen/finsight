@@ -20,6 +20,6 @@ Explain why financial calculations are separated from the model: the model can s
 
 Be explicit that the portfolio history uses current share quantities over the sample, rather than a transaction ledger. Discuss the difference between historical VaR and a guaranteed loss limit, and why scenario heuristics require disclosed assumptions.
 
-Describe the tests actually executed: backend tests, static checks, production frontend build and app-browser workflows. Docker/PostgreSQL and credentialed live integrations were not verified locally. Automated Playwright execution was blocked by the local browser sandbox; CI configuration is included but has not yet run on GitHub.
+Describe the tests actually executed: backend tests, static checks, production frontend build and app-browser workflows. Docker/PostgreSQL and credentialed live integrations were not verified locally. Automated Playwright execution was blocked by the local browser sandbox; GitHub CI has passed the frontend production build and automated desktop/mobile browser workflows. The backend/PostgreSQL CI job is queued.
 
 This is an independent personal project, not employment experience, a deployed trading system or a claim of profitable investment performance.
