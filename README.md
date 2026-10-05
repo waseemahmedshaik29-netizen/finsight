@@ -1,6 +1,6 @@
 # FinSight
 
-[![FinSight checks](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml/badge.svg)](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml)
+[![FinSight checks](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/waseemahmedshaik29-netizen/finsight/actions/workflows/ci.yml)
 
 **Portfolio intelligence with calculations you can inspect.**
 
