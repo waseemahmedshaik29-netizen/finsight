@@ -4,8 +4,6 @@
 
 **Portfolio intelligence with calculations you can inspect.**
 
-Personal project built with AI-assisted development. See the [résumé entry and project notes](docs/personal-project.md) for a factual description of the work and its tested scope.
-
 FinSight is a local finance research terminal built with Next.js, TypeScript, FastAPI, SQLAlchemy and PostgreSQL. It combines portfolio analytics, historical risk, source-linked company research, valuation, macro scenarios and a tool-based analyst. The flagship **What Changed?** view compares immutable snapshots of holdings, risk metrics, macro observations and filing IDs.
 
 The complete demo runs without API keys. Synthetic data is labeled on every screen and report. Live integrations fail visibly rather than substitute synthetic observations.
