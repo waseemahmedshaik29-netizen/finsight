@@ -1,0 +1,55 @@
+name: FinSight checks
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: finsight
+          POSTGRES_PASSWORD: test_only
+          POSTGRES_DB: finsight
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finsight" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements.txt
+      - run: cd backend && pytest -q
+      - name: PostgreSQL integration
+        env:
+          DATABASE_URL: postgresql+psycopg://finsight:test_only@localhost:5432/finsight
+        run: cd backend && python scripts/postgres_smoke.py
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements.txt
+      - run: cd frontend && pnpm exec playwright install --with-deps chromium
+      - name: Browser regression
+        run: |
+          cd backend
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/finsight-api.log 2>&1 &
+          cd ../frontend
+          pnpm start > /tmp/finsight-ui.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health && curl -fsS http://localhost:3000 >/dev/null; then break; fi
+            sleep 1
+          done
+          pnpm test:e2e
