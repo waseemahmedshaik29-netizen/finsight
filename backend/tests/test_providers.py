@@ -20,6 +20,7 @@ def db():
 
 
 def test_live_price_parse_alignment_and_cache(db, monkeypatch):
+    monkeypatch.setenv("MARKET_DATA_PROVIDER", "stooq")
     dates = data.pd.bdate_range("2025-01-01", periods=40)
     response = Mock(
         text="Date,Close\n"
@@ -220,3 +221,16 @@ def test_http_error_names_provider_without_exposing_key(monkeypatch):
     assert "stooq.com returned HTTP 404" in str(error.value)
     assert "alphavantage" in str(error.value)
     assert "private" not in str(error.value)
+
+
+def test_alpha_requests_are_spaced(monkeypatch):
+    import httpx
+
+    waits = []
+    monkeypatch.setattr(data, "_LAST_ALPHA_REQUEST", 10.0)
+    monkeypatch.setattr(data.time, "monotonic", lambda: 10.2)
+    monkeypatch.setattr(data.time, "sleep", waits.append)
+    response = httpx.Response(200, request=httpx.Request("GET", "https://www.alphavantage.co/query"))
+    monkeypatch.setattr(data.httpx, "get", lambda *a, **kw: response)
+    data.request("https://www.alphavantage.co/query")
+    assert waits == pytest.approx([0.9])

@@ -35,6 +35,8 @@ class DataError(Exception):
 
 _SEC_LOCK = threading.Lock()
 _LAST_SEC_REQUEST = 0.0
+_ALPHA_LOCK = threading.Lock()
+_LAST_ALPHA_REQUEST = 0.0
 
 
 def cached(db, key, fetch, hours=12):
@@ -71,12 +73,16 @@ def request(url, params=None, sec=False):
         if sec
         else {}
     )
-    global _LAST_SEC_REQUEST
+    global _LAST_SEC_REQUEST, _LAST_ALPHA_REQUEST
     if sec:
         with _SEC_LOCK:
             delay = max(0.0, 0.2 - (time.monotonic() - _LAST_SEC_REQUEST))
             time.sleep(delay)
             _LAST_SEC_REQUEST = time.monotonic()
+    if httpx.URL(url).host == "www.alphavantage.co":
+        with _ALPHA_LOCK:
+            time.sleep(max(0.0, 1.1 - (time.monotonic() - _LAST_ALPHA_REQUEST)))
+            _LAST_ALPHA_REQUEST = time.monotonic()
     try:
         response = httpx.get(
             url, params=params, headers=headers, timeout=20, follow_redirects=True
@@ -160,7 +166,7 @@ def market(db, tickers, mode="demo"):
             rows = payload.get("Time Series (Daily)")
             if not rows:
                 raise DataError(
-                    "Alpha Vantage returned no daily observations; check your key, symbol or plan quota"
+                    "Alpha Vantage returned no daily observations. Its free tier limits requests to one per second and 25 per day; if your daily quota is exhausted, use Demo data until it resets. Also check the ticker and key."
                 )
             df = pd.Series(
                 {date: float(row["4. close"]) for date, row in rows.items()}
