@@ -207,3 +207,16 @@ def test_malformed_macro_response_is_source_error(db, monkeypatch):
     )
     with pytest.raises(data.DataError, match="unexpected response"):
         data.macro(db, "live")
+
+
+def test_http_error_names_provider_without_exposing_key(monkeypatch):
+    import httpx
+
+    request = httpx.Request("GET", "https://stooq.com/q/d/l/?apikey=private")
+    response = httpx.Response(404, request=request)
+    monkeypatch.setattr(data.httpx, "get", lambda *args, **kwargs: response)
+    with pytest.raises(data.DataError) as error:
+        data.request("https://stooq.com/q/d/l/", {"apikey": "private"})
+    assert "stooq.com returned HTTP 404" in str(error.value)
+    assert "alphavantage" in str(error.value)
+    assert "private" not in str(error.value)

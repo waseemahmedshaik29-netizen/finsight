@@ -85,6 +85,16 @@ def request(url, params=None, sec=False):
         if len(response.content) > 15_000_000:
             raise DataError("Source response exceeds 15 MB limit")
         return response
+    except httpx.HTTPStatusError as e:
+        host = httpx.URL(url).host
+        help_text = (
+            "Select Demo data, or configure MARKET_DATA_PROVIDER=alphavantage and ALPHA_VANTAGE_API_KEY for live prices."
+            if host == "stooq.com"
+            else "Check the provider's access requirements and retry, or select Demo data."
+        )
+        raise DataError(
+            f"{host} returned HTTP {e.response.status_code}. {help_text}"
+        ) from e
     except httpx.HTTPError as e:
         raise DataError(
             f"Public source unavailable ({type(e).__name__}); retry later or select demo mode"
