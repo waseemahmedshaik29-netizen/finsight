@@ -22,7 +22,9 @@ from .data import (
     market,
     search_filings,
 )
-from .db import Base, Portfolio, Position, Session, Snapshot, engine, session
+from .db import Portfolio, Position, Session, Snapshot, engine, session
+
+from .migrations import upgrade_database
 
 Mode = Literal["demo", "live"]
 Ticker = Annotated[str, Field(pattern=r"^[A-Z][A-Z0-9.\-]{0,11}$")]
@@ -85,7 +87,7 @@ class AnalystInput(Input):
 
 @asynccontextmanager
 async def lifespan(app):
-    Base.metadata.create_all(engine)
+    upgrade_database(engine)
     with Session() as db:
         if not db.scalars(select(Portfolio)).first():
             p = Portfolio(name="Core conviction", benchmark="SPY", cash=10000)
