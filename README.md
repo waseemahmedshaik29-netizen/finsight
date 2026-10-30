@@ -140,6 +140,73 @@ CI runs isolated unit/API tests, a real PostgreSQL service integration, frontend
 
 ## Boundaries and future extensions
 
-This is a runnable portfolio project for research and demonstration. It implements all requested feature categories with explicit models and local fallbacks; it does not claim the depth of a commercial terminal. No authentication, transaction ledger, multi-currency accounting, historical crisis replay, earnings-estimate feed, fitted style-factor regressions, automated recommendations or vector embedding index is included. SEC field mappings and sector assumptions are intentionally conservative. Add an authentication layer, migrations for schema evolution, process-independent scheduling/rate limiting, licensed adjusted market data, and transaction-aware accounting before a shared production deployment.
+This is a runnable portfolio project for research and demonstration. It implements all requested feature categories with explicit models and local fallbacks; it does not claim the depth of a commercial terminal. No authentication, transaction ledger, multi-currency accounting, historical crisis replay, earnings-estimate feed, fitted style-factor regressions, automated recommendations or vector embedding index is included. SEC field mappings and sector assumptions are intentionally conservative. Add an authentication layer, process-independent scheduling/rate limiting, licensed adjusted market data, and transaction-aware accounting before a shared production deployment.
 
-Tables are created on startup for version 1.0. Persisted cache and snapshots use SQLAlchemy JSON supported by both databases. Schema changes after release need a migration; `create_all` does not migrate existing tables. Back up your database before changing versions.
+Schema versions are managed by Alembic; see Database migrations below. Persisted cache and snapshots use SQLAlchemy JSON supported by both databases. Back up your database before changing versions.
+
+## Database migrations
+
+Alembic now owns schema changes. The four original SQLAlchemy tables (`portfolios`,
+`positions`, `snapshots`, `cache`) are revision `0001_initial`. Application startup
+runs `upgrade head` before seeding, preserving the existing single-process local
+SQLite and Docker/PostgreSQL startup experience. The baseline uses a frozen schema,
+not future ORM definitions. No existing portfolio, position, snapshot or cache rows
+are rewritten.
+
+From `backend/`, using the same environment and database as the API:
+
+```bash
+source .venv/bin/activate
+alembic current
+alembic upgrade head
+alembic check
+```
+
+`DATABASE_URL` and the root `.env` are resolved by the same code as the app.
+SQLite defaults to `./finsight.db` relative to the working directory: run these
+commands from `backend/` to address the same file as the documented local server.
+An explicitly exported `DATABASE_URL` takes precedence over `.env`. No URL or
+credentials are stored in `alembic.ini`. Docker includes all migration files:
+
+```bash
+docker compose exec backend alembic current
+docker compose exec backend alembic upgrade head
+```
+
+Before adopting an existing database, stop application writers and take a backup
+(SQLite: stop the API and back up the database with SQLite's backup facility;
+PostgreSQL: use `pg_dump`). Run `alembic upgrade head`. On an unversioned legacy
+database the baseline checks tables, columns/types/nullability, defaults, primary
+keys, unique constraints and foreign keys against the original schema before
+recording the revision. Partial or incompatible schemas fail with a reconciliation
+error; they are not silently stamped or repaired. Unrelated tables are ignored.
+Review the database and restore/reconcile it before retrying. Do not use
+`alembic stamp head` as a workaround for schema drift. Offline SQL mode is not
+supported for this baseline because legacy adoption requires inspection.
+
+For a future model change:
+
+```bash
+alembic revision --autogenerate -m "Describe the schema change"
+# Review the generated upgrade AND downgrade; use batch_alter_table for SQLite
+# table changes where necessary. Test both databases before release.
+alembic upgrade head
+alembic check
+```
+
+The template and SQLite batch rendering are included. Autogeneration is a draft,
+not a substitute for reviewing data preservation, unnamed constraints and backfills.
+`alembic downgrade -1` rolls back one revision; **downgrading the baseline to
+`base` deletes all four application tables and their data**, including adopted
+legacy data. Back up first; do not run it against a database you need to retain.
+
+Migration tests upgrade empty and populated pre-Alembic databases, check repeat
+upgrades and model parity, preserve rows/JSON/timestamps, and reject schema drift.
+CI runs them on SQLite and a disposable PostgreSQL database. To include PostgreSQL
+locally, supply an **empty disposable** `MIGRATION_TEST_DATABASE_URL` before running
+`pytest -q`; that test database's application tables are deleted after each test.
+The ordinary SQLite tests never target your local `finsight.db`.
+
+For shared deployment, run migrations once while application writers are stopped,
+then start the application processes. Startup upgrades are a local convenience,
+not a cross-process migration lock; do not race initial upgrades across replicas.
